@@ -1,0 +1,4 @@
+repository "StrangerDimensions@Andronovo@cloud"
+  path "/"
+    br "/main"
+    co "/main"
