@@ -1,24 +1,46 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    private int _health = 100;
+    private const int MaxHealth = 100;
+    private int _health = MaxHealth;
+    private PlayerWorld _world = PlayerWorld.Real;
+    private PlayerType _playerType;
 
-    [SerializeField] private PlayerWorld _world;
-    public PlayerWorld World => _world;
-    public JumpWay jumpWay
+    public short JumpCount { get; set; }
+
+    public PlayerType PlayerType
     {
-        get => _world == PlayerWorld.Real ? JumpWay.Up : JumpWay.Down;
+        get => _playerType;
+        private set => _playerType = value;
     }
 
-    public int Health => _health;
+    public PlayerWorld World
+    {
+        get => _world;
+        private set => _world = value;
+    }
+
+    public JumpWay JumpWay
+    {
+        get => World == PlayerWorld.Real ? JumpWay.Up : JumpWay.Down;
+    }
+
+    public int Health
+    {
+        get => _health;
+        private set => _health = Mathf.Clamp(value, 0, MaxHealth);
+    }
+
+    private void Awake()
+    {
+        PlayerType = gameObject.name == "PlayerTop" ? PlayerType.PlayerTop : PlayerType.PlayerBottom;
+    }
 
     public void TakeDamage(int damage)
     {
-        _health -= damage;
-        if (_health <= 0)
+        Health -= damage;
+        if (Health <= 0)
         {
             Die();
         }
@@ -31,32 +53,31 @@ public class Player : MonoBehaviour
 
     public void SwitchWorld()
     {
-        if (_world == PlayerWorld.Real)
-        {
-            _world = PlayerWorld.Parallel;
-        }
-        else
-        {
-            _world = PlayerWorld.Real;
-        }
+        World = World == PlayerWorld.Real ? PlayerWorld.Parallel : PlayerWorld.Real;
+        GetComponent<Rigidbody2D>().gravityScale = World == PlayerWorld.Real ? 1 : -1;
     }
 
     public void Heal(int amount)
     {
-        _health += amount;
+        Health += amount;
     }
 
-    public void ChangePlayerPosition(Vector2 position)
+    public void ChangePlayerPosition(Vector2 newPosition)
     {
-        transform.position = position;
+        transform.position = newPosition;
     }
-
 }
 
 public enum PlayerWorld
 {
     Real,
     Parallel
+}
+
+public enum PlayerType
+{
+    PlayerTop,
+    PlayerBottom
 }
 
 public enum JumpWay

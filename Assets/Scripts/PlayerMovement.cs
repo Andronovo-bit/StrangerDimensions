@@ -1,53 +1,95 @@
-using System;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-
     private Rigidbody2D _rbody;
     private Player _player;
     private GameManager _gameManager;
     private bool _isPortalTriggered = false;
-    [SerializeField] private short _jumpWay;
-    [SerializeField] private float speed = 5f;
-    void Awake()
+    private bool _isGrounded;
+    private Dictionary<PlayerType, short> _maxJump = new();
+
+    [SerializeField]
+    private float _speed = 5f;
+    public float JumpForce = 5f;
+    public float GroundCheckRadius = 0.2f;
+    public LayerMask GroundLayer;
+    public float DashDistance = 5f;
+
+    private Vector2 _moveDirection;
+    private bool _isDashing = false;
+
+    private void Awake()
     {
         _rbody = GetComponent<Rigidbody2D>();
         _player = GetComponent<Player>();
-        _jumpWay = (short)_player.jumpWay;
     }
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         _gameManager = FindObjectOfType<GameManager>();
+        _maxJump.Add(PlayerType.PlayerTop, 2);
+        _maxJump.Add(PlayerType.PlayerBottom, 1);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-         _rbody.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * speed, _rbody.velocity.y);
+        HandleMovementInput();
+        HandleJumpInput();
+        HandleDashInput();
+    }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+    private void HandleMovementInput()
+    {
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveY = Input.GetAxisRaw("Vertical");
+        _moveDirection = new Vector2(moveX, moveY).normalized;
+
+        _rbody.velocity = new Vector2(moveX * _speed, _rbody.velocity.y);
+    }
+
+    private void HandleJumpInput()
+    {
+        _isGrounded = Physics2D.OverlapCircle(_player.gameObject.transform.position, GroundCheckRadius, GroundLayer);
+
+        if (_isGrounded)
         {
-            _rbody.velocity = new Vector2(_rbody.velocity.x, speed * _jumpWay);
+            _player.JumpCount = 0;
         }
 
+        if (Input.GetKeyDown(KeyCode.Space) && (_isGrounded || _player.JumpCount < _maxJump[_player.PlayerType]))
+        {
+            Jump();
+        }
     }
 
-    void OnTriggerEnter2D(Collider2D collision)
+    private void HandleDashInput()
     {
-        if (collision.gameObject.tag == "Portal" && !_isPortalTriggered)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && _player.PlayerType == PlayerType.PlayerBottom)
         {
-            
-            //create color HSV
+            Dash();
+        }
+    }
+
+    private void Dash()
+    {
+        _rbody.MovePosition(_rbody.position + _moveDirection * DashDistance);
+    }
+
+    private void Jump()
+    {
+        _rbody.velocity = new Vector2(_rbody.velocity.x, JumpForce * (int)_player.JumpWay);
+        _player.JumpCount++;
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Portal") && !_isPortalTriggered)
+        {
             Color color = new Color32(0, 255, 34, 14);
             collision.gameObject.GetComponent<SpriteRenderer>().color = color;
-            StartCoroutine(_gameManager.ChangeCameraPosition());
             _isPortalTriggered = true;
         }
     }
-
-
 }
