@@ -1,11 +1,13 @@
 using System.Collections;
+using Cinemachine;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     public Player playerTop;
     public Player playerBottom;
-    public Cinemachine.CinemachineVirtualCamera mainCamera;
+    public CinemachineVirtualCamera mainCamera;
+    public GameObject world;
     private bool isSwapReady = true; // Ensure we don't swap positions too frequently
 
     void Update()
@@ -26,13 +28,15 @@ public class GameManager : MonoBehaviour
         //playerTop.SwitchWorld();
         //change cinemachine follow target
         ChangeCameraPosition();
-
         ActivateSplitScreen(true);
     }
 
     void ChangeCameraPosition()
     {
         mainCamera.Follow = mainCamera.Follow == playerTop.transform ? playerBottom.transform : playerTop.transform;
+        world.transform.rotation = world.transform.rotation == Quaternion.Euler(0, 0, 0) ? Quaternion.Euler(0, 180, 180) : Quaternion.Euler(0, 0, 0);
+        playerBottom.SwitchWorld();
+        playerTop.SwitchWorld();
     }
 
     // Optional: Implement a cooldown for swapping to prevent spamming
@@ -59,7 +63,7 @@ public class GameManager : MonoBehaviour
 
     public void ActivateSplitScreen(bool isActive)
     {
-        mainCamera.GetCinemachineComponent<Cinemachine.CinemachineFramingTransposer>().m_ScreenX = isActive ? 0.25f : 0.5f;
+        //change camera Bias Y value
     }
 
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -6,6 +7,9 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D _rbody;
     private Player _player;
     private GameManager _gameManager;
+    private Animator _animator;
+
+    private SpriteRenderer _spriteRenderer;
     private bool _isPortalTriggered = false;
     private bool _isGrounded;
     private Dictionary<PlayerType, short> _maxJump = new();
@@ -13,12 +17,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float _speed = 5f;
     public float JumpForce = 5f;
-    public float GroundCheckRadius = 0.2f;
+    public float GroundCheckRadius = 0.85f;
     public LayerMask GroundLayer;
     public float DashDistance = 5f;
 
     private Vector2 _moveDirection;
     private bool _isDashing = false;
+    private float _moveX;
+    private float _moveY;
 
     private void Awake()
     {
@@ -29,12 +35,19 @@ public class PlayerMovement : MonoBehaviour
     private void Start()
     {
         _gameManager = FindObjectOfType<GameManager>();
-        _maxJump.Add(PlayerType.PlayerTop, 2);
-        _maxJump.Add(PlayerType.PlayerBottom, 1);
+        _maxJump.Add(PlayerType.PlayerTop, 1);
+        _maxJump.Add(PlayerType.PlayerBottom, 0);
+
+        _animator = GetComponent<Animator>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+
     }
 
     private void Update()
     {
+        _moveX = Input.GetAxisRaw("Horizontal");
+        _moveY = Input.GetAxisRaw("Vertical");
+
         HandleMovementInput();
         HandleJumpInput();
         HandleDashInput();
@@ -42,11 +55,22 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovementInput()
     {
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveY = Input.GetAxisRaw("Vertical");
-        _moveDirection = new Vector2(moveX, moveY).normalized;
 
-        _rbody.velocity = new Vector2(moveX * _speed, _rbody.velocity.y);
+        _moveDirection = new Vector2(_moveX, _moveY).normalized;
+
+        // Cache references to components to avoid calling GetComponent multiple times
+        // Animator playerAnimator = _player.GetComponent<Animator>();
+        // SpriteRenderer playerSpriteRenderer = _player.GetComponent<SpriteRenderer>();
+
+        bool isRunning = _moveX != 0;
+        _animator.SetBool("isRunning", isRunning);
+
+        if (isRunning)
+        {
+            _spriteRenderer.flipX = _moveX < 0;
+        }
+
+        _rbody.velocity = new Vector2(_moveX * _speed, _rbody.velocity.y);
     }
 
     private void HandleJumpInput()
@@ -81,6 +105,37 @@ public class PlayerMovement : MonoBehaviour
     {
         _rbody.velocity = new Vector2(_rbody.velocity.x, JumpForce * (int)_player.JumpWay);
         _player.JumpCount++;
+
+        _animator.SetBool("isJumping", true);
+
+        //after 1 second, set isJumping to false
+        if (_player.JumpCount > 1)
+        {
+
+            //after 1 second, set isJumping to false
+            Invoke("SetIsJumpingToFalse", 1f);
+        }
+        else
+        {
+
+            //after 1 second, set isJumping to false
+            Invoke("SetIsJumpingToFalse", 0.5f);
+        }
+
+
+
+        // Optional: Play jump sound effect
+
+        // Optional: Play jump animation
+
+        // Optional: Add a cooldown for jumping 
+
+
+    }
+
+    private void SetIsJumpingToFalse()
+    {
+        _animator.SetBool("isJumping", false);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

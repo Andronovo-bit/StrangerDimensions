@@ -4,7 +4,7 @@ public class Player : MonoBehaviour
 {
     private const int MaxHealth = 100;
     private int _health = MaxHealth;
-    private PlayerWorld _world = PlayerWorld.Real;
+    private PlayerWorld _world;
     private PlayerType _playerType;
 
     public short JumpCount { get; set; }
@@ -34,7 +34,17 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
-        PlayerType = gameObject.name == "PlayerTop" ? PlayerType.PlayerTop : PlayerType.PlayerBottom;
+
+        if (gameObject.name == "PlayerTop")
+        {
+            World = PlayerWorld.Real;
+            PlayerType = PlayerType.PlayerTop;
+        }
+        else
+        {
+            World = PlayerWorld.Parallel;
+            PlayerType = PlayerType.PlayerBottom;
+        }
     }
 
     public void TakeDamage(int damage)
