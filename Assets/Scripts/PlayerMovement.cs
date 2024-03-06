@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -22,7 +23,15 @@ public class PlayerMovement : MonoBehaviour
     public float DashDistance = 5f;
 
     private Vector2 _moveDirection;
-    private bool _isDashing = false;
+    private enum MovementState
+    {
+        Idle = 0,
+        Running = 1,
+        Jumping = 2,
+        Falling = 3,
+    }
+
+    private MovementState _movementState = MovementState.Idle;
     private float _moveX;
     private float _moveY;
 
@@ -48,8 +57,30 @@ public class PlayerMovement : MonoBehaviour
         _moveX = Input.GetAxisRaw("Horizontal");
         _moveY = Input.GetAxisRaw("Vertical");
 
-        HandleMovementInput();
-        HandleJumpInput();
+        switch (_movementState)
+        {
+            case MovementState.Idle:
+            case MovementState.Running:
+                HandleMovementInput();
+
+                _isGrounded = Physics2D.OverlapCircle(_player.gameObject.transform.position, GroundCheckRadius, GroundLayer);
+
+                if (_isGrounded)
+                {
+                    HandleJumpInput();
+                }
+                break;
+            case MovementState.Jumping:
+                HandleJumpInput();
+                break;
+            case MovementState.Falling:
+                if (_isGrounded)
+                {
+                    _movementState = MovementState.Idle;
+                }
+                break;
+        }
+
         HandleDashInput();
     }
 
@@ -58,16 +89,16 @@ public class PlayerMovement : MonoBehaviour
 
         _moveDirection = new Vector2(_moveX, _moveY).normalized;
 
-        // Cache references to components to avoid calling GetComponent multiple times
-        // Animator playerAnimator = _player.GetComponent<Animator>();
-        // SpriteRenderer playerSpriteRenderer = _player.GetComponent<SpriteRenderer>();
+        _movementState = _moveX == 0 ? MovementState.Idle : MovementState.Running;
+        _animator.SetInteger("state", (int)_movementState);
 
-        bool isRunning = _moveX != 0;
-        _animator.SetBool("isRunning", isRunning);
-
-        if (isRunning)
+        if (_moveX > 0)
         {
-            _spriteRenderer.flipX = _moveX < 0;
+            _spriteRenderer.flipX = false;
+        }
+        else if (_moveX < 0)
+        {
+            _spriteRenderer.flipX = true;
         }
 
         _rbody.velocity = new Vector2(_moveX * _speed, _rbody.velocity.y);
@@ -75,12 +106,6 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleJumpInput()
     {
-        _isGrounded = Physics2D.OverlapCircle(_player.gameObject.transform.position, GroundCheckRadius, GroundLayer);
-
-        if (_isGrounded)
-        {
-            _player.JumpCount = 0;
-        }
 
         if (Input.GetKeyDown(KeyCode.Space) && (_isGrounded || _player.JumpCount < _maxJump[_player.PlayerType]))
         {
@@ -98,7 +123,20 @@ public class PlayerMovement : MonoBehaviour
 
     private void Dash()
     {
-        _rbody.MovePosition(_rbody.position + _moveDirection * DashDistance);
+        Vector2 targetPosition = _rbody.position + _moveDirection * DashDistance;
+        StartCoroutine(SmoothDash(_rbody.position, targetPosition, 0.2f));
+    }
+
+    private IEnumerator SmoothDash(Vector2 start, Vector2 end, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            _rbody.position = Vector2.Lerp(start, end, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        _rbody.position = end;
     }
 
     private void Jump()
@@ -106,8 +144,8 @@ public class PlayerMovement : MonoBehaviour
         _rbody.velocity = new Vector2(_rbody.velocity.x, JumpForce * (int)_player.JumpWay);
         _player.JumpCount++;
 
-        _animator.SetBool("isJumping", true);
-
+        _movementState = MovementState.Jumping;
+        _animator.SetInteger("state", (int)_movementState);
         //after 1 second, set isJumping to false
         if (_player.JumpCount > 1)
         {
@@ -132,10 +170,10 @@ public class PlayerMovement : MonoBehaviour
 
 
     }
-
     private void SetIsJumpingToFalse()
     {
-        _animator.SetBool("isJumping", false);
+        _movementState = MovementState.Falling;
+        _animator.SetInteger("state", (int)_movementState);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

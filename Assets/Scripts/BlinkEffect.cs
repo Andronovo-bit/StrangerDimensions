@@ -6,7 +6,7 @@ public class BlinkEffect : MonoBehaviour
     public RectTransform upperBox;
     public RectTransform lowerBox;
     public float speed = 0.70f;
-    public int blinkTimes = 3;
+    public int blinkTimes = 1;
     public bool endClosing = false;
     public AnimationCurve blinkCurve = AnimationCurve.EaseInOut(0, 0, 1, 1); // Added for smoothness
 
@@ -39,7 +39,12 @@ public class BlinkEffect : MonoBehaviour
             }
         }
         if (currentBlink == blinkTimes)
+        {
             yield return ScaleEyelids(0, true);
+            gameObject.SetActive(false);
+            this.enabled = false;
+            currentBlink = 0;
+        }
 
     }
 
