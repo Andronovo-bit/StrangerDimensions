@@ -1,144 +1,106 @@
 using UnityEngine;
+using System.Collections.Generic;
+using PDollarGestureRecognizer;
 
 public class ShapeRecognizer : MonoBehaviour
 {
-    public LineRenderer lineRenderer;
-    private Vector2 startPosition;
-    private Vector2 endPosition;
+    public LineRenderer lineRendererPrefab;
+    private List<Point> points = new List<Point>();
     private bool isDrawing = false;
+    private int strokeId = -1;
+    private List<Gesture> trainingSet = new List<Gesture>();
 
     void Start()
     {
-        lineRenderer.sortingLayerName = "Foreground";
-        lineRenderer.sortingOrder = 1;
-
+        LoadTrainingSet();
     }
+
+    void LoadTrainingSet()
+    {
+        TextAsset[] gesturesXml = Resources.LoadAll<TextAsset>("GestureSet/10-stylus-MEDIUM/");
+        foreach (TextAsset gestureXml in gesturesXml)
+            trainingSet.Add(GestureIO.ReadGestureFromXML(gestureXml.text));
+    }
+
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) || IsTouchBegin())
         {
             StartDrawing();
         }
-        else if (Input.GetMouseButton(0) && isDrawing)
+        else if ((Input.GetMouseButton(0) || IsTouchContinue()) && isDrawing)
         {
             ContinueDrawing();
         }
-        else if (Input.GetMouseButtonUp(0) && isDrawing)
+        else if ((Input.GetMouseButtonUp(0) || IsTouchEnd()) && isDrawing)
         {
-            Debug.Log("Position Count: " + lineRenderer.positionCount);
             EndDrawing();
-            RecognizeShape();
-
         }
-        else if (Input.GetMouseButtonDown(1))
+        else if (Input.GetMouseButtonDown(1)) // Right-click to cancel
         {
             CancelDrawing();
         }
     }
 
-    void CancelDrawing()
+    bool IsTouchBegin()
     {
-        isDrawing = false;
-        lineRenderer.positionCount = 0;
+        return Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began;
     }
 
-    void ContinueDrawing()
+    bool IsTouchContinue()
     {
-        Vector2 currentPosition = GetMouseWorldPosition();
-        AddLineRendererPosition(currentPosition);
+        return Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved;
     }
 
-    void AddLineRendererPosition(Vector2 position)
+    bool IsTouchEnd()
     {
-        lineRenderer.positionCount += 1;
-        lineRenderer.SetPosition(lineRenderer.positionCount - 1, position);
+        return Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended;
     }
 
     void StartDrawing()
     {
         isDrawing = true;
-        startPosition = GetMouseWorldPosition();
-        SetLineRendererPosition(0, startPosition);
+        points.Clear();
+        strokeId = -1;
+    }
+
+    void ContinueDrawing()
+    {
+        Vector2 currentPosition = GetMouseWorldPosition();
+        if (points.Count % 2 == 0)
+        {
+            strokeId++;
+        }
+        points.Add(new Point(currentPosition.x, -currentPosition.y, strokeId));
+        lineRendererPrefab.positionCount = points.Count;
+        lineRendererPrefab.SetPosition(points.Count - 1, currentPosition);
     }
 
     void EndDrawing()
     {
         isDrawing = false;
-        endPosition = GetMouseWorldPosition();
-        //SetLineRendererPosition(1, endPosition);
+        RecognizeShape();
+    }
+
+    void CancelDrawing()
+    {
+        isDrawing = false;
+        points.Clear();
+        lineRendererPrefab.positionCount = 0;
     }
 
     Vector2 GetMouseWorldPosition()
     {
-        return Camera.main.ScreenToWorldPoint(Input.mousePosition);
-    }
-
-    void SetLineRendererPosition(int index, Vector2 position)
-    {
-        lineRenderer.positionCount = index + 1;
-        lineRenderer.SetPosition(index, position);
+        Vector3 screenPosition = Input.touchCount > 0 ? (Vector3)Input.GetTouch(0).position : Input.mousePosition;
+        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, 10));
+        return new Vector2(worldPosition.x, worldPosition.y);
     }
 
     void RecognizeShape()
     {
-        Vector2 direction = endPosition - startPosition;
-        float angle = Vector2.SignedAngle(Vector2.right, direction);
+        Gesture candidate = new Gesture(points.ToArray());
+        Result gestureResult = PointCloudRecognizer.Classify(candidate, trainingSet.ToArray());
 
-        if (IsHorizontalLine(angle))
-        {
-            Debug.Log("Horizontal Line");
-        }
-        else if (IsVerticalLine(angle))
-        {
-            Debug.Log("Vertical Line");
-        }
-        else if (IsUpwardDiagonal(angle))
-        {
-            Debug.Log("Upward Diagonal");
-        }
-        else if (IsDownwardDiagonal(angle))
-        {
-            Debug.Log("Downward Diagonal");
-        }
-        else if (IsUpwardArrow(angle))
-        {
-            Debug.Log("Upward Arrow");
-        }
-        else if (IsDownwardArrow(angle))
-        {
-            Debug.Log("Downward Arrow");
-        }
-    }
-
-    bool IsHorizontalLine(float angle)
-    {
-        return Mathf.Abs(angle) < 30 || Mathf.Abs(angle) > 150;
-    }
-
-    bool IsVerticalLine(float angle)
-    {
-        return angle > 60 && angle < 120 || angle < -60 && angle > -120;
-    }
-
-    bool IsUpwardDiagonal(float angle)
-    {
-        return angle >= 30 && angle <= 60 || angle >= -150 && angle <= -120;
-    }
-
-    bool IsDownwardDiagonal(float angle)
-    {
-        return angle >= 120 && angle <= 150 || angle >= -60 && angle <= -30;
-    }
-
-    bool IsUpwardArrow(float angle)
-    {
-        // Bu, sembolün yukarı yönlü bir ok olup olmadığını kontrol etmek için basit bir yer tutucudur.
-        return angle > -30 && angle < 30;
-    }
-
-    bool IsDownwardArrow(float angle)
-    {
-        // Bu, sembolün aşağı yönlü bir ok olup olmadığını kontrol etmek için basit bir yer tutucudur.
-        return angle > 150 || angle < -150;
+        Debug.Log("Gesture ID: " + gestureResult.GestureClass + " Score: " + gestureResult.Score);
     }
 }
