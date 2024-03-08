@@ -79,7 +79,8 @@ public class ShapeRecognizer : MonoBehaviour
     void EndDrawing()
     {
         isDrawing = false;
-        RecognizeShape();
+        if (points.Count > 2)
+            RecognizeShape();
     }
 
     void CancelDrawing()

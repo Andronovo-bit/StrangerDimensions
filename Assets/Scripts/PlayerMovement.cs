@@ -9,7 +9,7 @@ public class PlayerMovement : MonoBehaviour
     private Player _player;
     private GameManager _gameManager;
     private Animator _animator;
-
+    private CapsuleCollider2D _capsuleCollider;
     private SpriteRenderer _spriteRenderer;
     private bool _isPortalTriggered = false;
     private bool _isGrounded;
@@ -29,6 +29,7 @@ public class PlayerMovement : MonoBehaviour
         Running = 1,
         Jumping = 2,
         Falling = 3,
+        Attack = 4,
     }
 
     private MovementState _movementState = MovementState.Idle;
@@ -39,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _rbody = GetComponent<Rigidbody2D>();
         _player = GetComponent<Player>();
+        _capsuleCollider = GetComponent<CapsuleCollider2D>();
     }
 
     private void Start()
@@ -56,19 +58,15 @@ public class PlayerMovement : MonoBehaviour
     {
         _moveX = Input.GetAxisRaw("Horizontal");
         _moveY = Input.GetAxisRaw("Vertical");
+        _isGrounded = Physics2D.BoxCast(_capsuleCollider.bounds.center, _capsuleCollider.bounds.size, 0f, Vector2.down, 0.1f, GroundLayer);
 
         switch (_movementState)
         {
             case MovementState.Idle:
             case MovementState.Running:
                 HandleMovementInput();
+                HandleJumpInput();
 
-                _isGrounded = Physics2D.OverlapCircle(_player.gameObject.transform.position, GroundCheckRadius, GroundLayer);
-
-                if (_isGrounded)
-                {
-                    HandleJumpInput();
-                }
                 break;
             case MovementState.Jumping:
                 HandleJumpInput();
@@ -79,9 +77,15 @@ public class PlayerMovement : MonoBehaviour
                     _movementState = MovementState.Idle;
                 }
                 break;
+            case MovementState.Attack:
+                //get animation time
+                var time = _animator.GetCurrentAnimatorStateInfo(0).length;
+                Invoke("SetIsAttackingToFalse", time);
+                break;
         }
 
         HandleDashInput();
+        HandleAttackInput();
     }
 
     private void HandleMovementInput()
@@ -106,6 +110,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleJumpInput()
     {
+        if (_isGrounded)
+        {
+            _player.JumpCount = 0;
+        }
 
         if (Input.GetKeyDown(KeyCode.Space) && (_isGrounded || _player.JumpCount < _maxJump[_player.PlayerType]))
         {
@@ -113,6 +121,13 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void HandleAttackInput()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            Attack();
+        }
+    }
     private void HandleDashInput()
     {
         if (Input.GetKeyDown(KeyCode.LeftShift) && _player.PlayerType == PlayerType.PlayerBottom)
@@ -173,6 +188,17 @@ public class PlayerMovement : MonoBehaviour
     private void SetIsJumpingToFalse()
     {
         _movementState = MovementState.Falling;
+        _animator.SetInteger("state", (int)_movementState);
+    }
+    private void SetIsAttackingToFalse()
+    {
+        _movementState = MovementState.Idle;
+        _animator.SetInteger("state", (int)_movementState);
+    }
+
+    private void Attack()
+    {
+        _movementState = MovementState.Attack;
         _animator.SetInteger("state", (int)_movementState);
     }
 
