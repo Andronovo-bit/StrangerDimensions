@@ -70,8 +70,10 @@ public class PlayerMovement : MonoBehaviour
                 break;
             case MovementState.Jumping:
                 HandleJumpInput();
+                HandleMovementInput();
                 break;
             case MovementState.Falling:
+                HandleMovementInput();
                 if (_isGrounded)
                 {
                     _movementState = MovementState.Idle;
@@ -92,8 +94,8 @@ public class PlayerMovement : MonoBehaviour
     {
 
         _moveDirection = new Vector2(_moveX, _moveY).normalized;
-
-        _movementState = _moveX == 0 ? MovementState.Idle : MovementState.Running;
+        if (_movementState != MovementState.Jumping && _movementState != MovementState.Falling)
+            _movementState = _moveX == 0 ? MovementState.Idle : MovementState.Running;
         _animator.SetInteger("state", (int)_movementState);
 
         if (_moveX > 0)
