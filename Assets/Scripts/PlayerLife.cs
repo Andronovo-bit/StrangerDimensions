@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 
 public class PlayerLife : MonoBehaviour
 {
+    public AudioSource DeathSound;
+
     private int _lives = 3;
     private GameManager _gameManager;
 
@@ -29,6 +31,7 @@ public class PlayerLife : MonoBehaviour
 
     private void Die()
     {
+        DeathSound.Play();
         _lives--;
         _animator.SetTrigger("death");
         _rbody.bodyType = RigidbodyType2D.Static;

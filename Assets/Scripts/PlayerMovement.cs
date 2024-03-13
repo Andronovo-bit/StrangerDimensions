@@ -7,7 +7,6 @@ public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D _rbody;
     private Player _player;
-    private GameManager _gameManager;
     private Animator _animator;
     private CapsuleCollider2D _capsuleCollider;
     private SpriteRenderer _spriteRenderer;
@@ -15,21 +14,21 @@ public class PlayerMovement : MonoBehaviour
     private bool _isGrounded;
     private Dictionary<PlayerType, short> _maxJump = new();
 
+
     [SerializeField]
     private float _speed = 5f;
     public float JumpForce = 5f;
-    public float GroundCheckRadius = 0.85f;
+    public float GroundCheckRadius = 0.1f;
     public LayerMask GroundLayer;
     public float DashDistance = 5f;
-
+    public AudioSource JumpSound;
     private Vector2 _moveDirection;
     private enum MovementState
     {
         Idle = 0,
         Running = 1,
         Jumping = 2,
-        Falling = 3,
-        Attack = 4,
+        Falling = 3
     }
 
     private MovementState _movementState = MovementState.Idle;
@@ -41,11 +40,11 @@ public class PlayerMovement : MonoBehaviour
         _rbody = GetComponent<Rigidbody2D>();
         _player = GetComponent<Player>();
         _capsuleCollider = GetComponent<CapsuleCollider2D>();
+        Debug.Log("PlayerType: " + _player.PlayerType);
     }
 
     private void Start()
     {
-        _gameManager = FindObjectOfType<GameManager>();
         _maxJump.Add(PlayerType.PlayerTop, 1);
         _maxJump.Add(PlayerType.PlayerBottom, 0);
 
@@ -53,12 +52,11 @@ public class PlayerMovement : MonoBehaviour
         _spriteRenderer = GetComponent<SpriteRenderer>();
 
     }
-
     private void Update()
     {
         _moveX = Input.GetAxisRaw("Horizontal");
         _moveY = Input.GetAxisRaw("Vertical");
-        _isGrounded = Physics2D.BoxCast(_capsuleCollider.bounds.center, _capsuleCollider.bounds.size, 0f, Vector2.down, 0.1f, GroundLayer);
+        _isGrounded = Physics2D.BoxCast(_capsuleCollider.bounds.center, _capsuleCollider.bounds.size, _player.PlayerType == PlayerType.PlayerTop ? 0 : 180, Vector2.down, GroundCheckRadius, GroundLayer);
 
         switch (_movementState)
         {
@@ -79,17 +77,10 @@ public class PlayerMovement : MonoBehaviour
                     _movementState = MovementState.Idle;
                 }
                 break;
-            case MovementState.Attack:
-                //get animation time
-                var time = _animator.GetCurrentAnimatorStateInfo(0).length;
-                Invoke("SetIsAttackingToFalse", time);
-                break;
         }
 
         HandleDashInput();
-        HandleAttackInput();
     }
-
     private void HandleMovementInput()
     {
 
@@ -109,7 +100,6 @@ public class PlayerMovement : MonoBehaviour
 
         _rbody.velocity = new Vector2(_moveX * _speed, _rbody.velocity.y);
     }
-
     private void HandleJumpInput()
     {
         if (_isGrounded)
@@ -122,14 +112,6 @@ public class PlayerMovement : MonoBehaviour
             Jump();
         }
     }
-
-    private void HandleAttackInput()
-    {
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            Attack();
-        }
-    }
     private void HandleDashInput()
     {
         if (Input.GetKeyDown(KeyCode.LeftShift) && _player.PlayerType == PlayerType.PlayerBottom)
@@ -137,13 +119,35 @@ public class PlayerMovement : MonoBehaviour
             Dash();
         }
     }
-
     private void Dash()
     {
-        Vector2 targetPosition = _rbody.position + _moveDirection * DashDistance;
+        Vector2 dashDirection = GetDashDirection();
+        Vector2 targetPosition = _rbody.position + dashDirection * DashDistance;
+
+        RaycastHit2D hit = Physics2D.Raycast(_rbody.position, dashDirection, DashDistance, LayerMask.GetMask("Wall"));
+        if (hit.collider != null)
+        {
+            // If a wall was hit, adjust the target position to be just in front of the wall
+            targetPosition = hit.point - dashDirection * 0.1f;
+        }
+
         StartCoroutine(SmoothDash(_rbody.position, targetPosition, 0.2f));
     }
+    private Vector2 GetDashDirection()
+    {
+        // Determine the direction based on player input
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis("Vertical");
 
+        // If there's no vertical input, dash in the current move direction
+        if (verticalInput == 0)
+        {
+            return _moveDirection;
+        }
+
+        // Otherwise, dash in the direction of the input
+        return new Vector2(horizontalInput, verticalInput).normalized;
+    }
     private IEnumerator SmoothDash(Vector2 start, Vector2 end, float duration)
     {
         float elapsed = 0f;
@@ -155,7 +159,6 @@ public class PlayerMovement : MonoBehaviour
         }
         _rbody.position = end;
     }
-
     private void Jump()
     {
         _rbody.velocity = new Vector2(_rbody.velocity.x, JumpForce * (int)_player.JumpWay);
@@ -180,6 +183,7 @@ public class PlayerMovement : MonoBehaviour
 
 
         // Optional: Play jump sound effect
+        JumpSound.Play();
 
         // Optional: Play jump animation
 
@@ -192,18 +196,6 @@ public class PlayerMovement : MonoBehaviour
         _movementState = MovementState.Falling;
         _animator.SetInteger("state", (int)_movementState);
     }
-    private void SetIsAttackingToFalse()
-    {
-        _movementState = MovementState.Idle;
-        _animator.SetInteger("state", (int)_movementState);
-    }
-
-    private void Attack()
-    {
-        _movementState = MovementState.Attack;
-        _animator.SetInteger("state", (int)_movementState);
-    }
-
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.gameObject.CompareTag("Portal") && !_isPortalTriggered)
@@ -213,4 +205,6 @@ public class PlayerMovement : MonoBehaviour
             _isPortalTriggered = true;
         }
     }
+    public bool CanAttack => _movementState == MovementState.Idle && _isGrounded;
+
 }
