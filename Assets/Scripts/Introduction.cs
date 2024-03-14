@@ -215,6 +215,8 @@ public class Introduction : MonoBehaviour
         if (_currentTutorialTopIndex == 0)
         {
             TutorialTopTexts[_currentTutorialTopIndex].SetActive(true);
+            _hasPressSpaceTwice = false;
+
         }
 
         if (HasFinishT1())

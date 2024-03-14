@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class StickyPlatform : MonoBehaviour
 {
+    [SerializeField] private Transform Parent;
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("Collision Enter");
@@ -18,7 +20,7 @@ public class StickyPlatform : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            other.transform.SetParent(null);
+            other.transform.SetParent(Parent);
         }
 
     }
