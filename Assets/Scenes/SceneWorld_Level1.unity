@@ -2003,7 +2003,7 @@ MonoBehaviour:
   m_ZDamping: 1
   m_TargetMovementOnly: 1
   m_ScreenX: 0.5
-  m_ScreenY: 0.9
+  m_ScreenY: 0.881
   m_CameraDistance: 10
   m_DeadZoneWidth: 0.06
   m_DeadZoneHeight: 0.09
@@ -64326,7 +64326,7 @@ Transform:
   m_GameObject: {fileID: 1021760081}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 3.4641013, z: 0}
+  m_LocalPosition: {x: 0, y: 3.354405, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -64447,7 +64447,7 @@ Transform:
   m_GameObject: {fileID: 1036141425}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -13, y: -0.62530005, z: -10}
+  m_LocalPosition: {x: -13, y: -0.73499644, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -65630,7 +65630,7 @@ Transform:
   m_GameObject: {fileID: 1297064517}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -3.4641013, z: 0}
+  m_LocalPosition: {x: 0, y: -3.354405, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -66364,7 +66364,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1521919821}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 77d253e4b973f9a419fb60b15f488df3, type: 3}
   m_Name: 
@@ -68377,6 +68377,10 @@ PrefabInstance:
       propertyPath: m_cherryCountText
       value: 
       objectReference: {fileID: 174731200}
+    - target: {fileID: 6402944248718981378, guid: ea2ee14bf4d738847bc5c91b94143c1c, type: 3}
+      propertyPath: GroundCheckRadius
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 7012186722936459336, guid: ea2ee14bf4d738847bc5c91b94143c1c, type: 3}
       propertyPath: m_Name
       value: PlayerBottom

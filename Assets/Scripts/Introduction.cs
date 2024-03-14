@@ -43,7 +43,7 @@ public class Introduction : MonoBehaviour
     }
     void Start()
     {
-        StoryTexts = null;
+        // StoryTexts = null;
         if (StoryTexts?.Length > 0)
         {
             StoryTexts[_currentStoryIndex].SetActive(true);
@@ -51,12 +51,10 @@ public class Introduction : MonoBehaviour
             typewriterEffect.StartTyping();
             typewriterEffect.OnTypingFinished += FinishTyping;
         }
-        else
+        if (_isFinishStory)
         {
             m_skipText.SetActive(false);
-            _isFinishStory = true;
             StartCoroutine(CameraFocusPlayerOne());
-
         }
 
     }
@@ -118,6 +116,8 @@ public class Introduction : MonoBehaviour
     }
     void FixedUpdate()
     {
+        _isFinishStory = _currentStoryIndex >= StoryTexts.Length;
+
 
         if (_isFinishStory && !_isFinishTutorialTop)
         {

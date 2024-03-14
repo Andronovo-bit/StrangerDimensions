@@ -1,6 +1,5 @@
-using System.Collections;
 using Cinemachine;
-using UnityEditor.SearchService;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

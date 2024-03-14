@@ -56,7 +56,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _moveX = Input.GetAxisRaw("Horizontal");
         _moveY = Input.GetAxisRaw("Vertical");
-        _isGrounded = Physics2D.BoxCast(_capsuleCollider.bounds.center, _capsuleCollider.bounds.size, _player.PlayerType == PlayerType.PlayerTop ? 0 : 180, Vector2.down, GroundCheckRadius, GroundLayer);
+        _isGrounded = Physics2D.BoxCast(_capsuleCollider.bounds.center, _capsuleCollider.bounds.size, 0, Vector2.down, _player.PlayerType == PlayerType.PlayerTop ? GroundCheckRadius : (GroundCheckRadius * _rbody.gravityScale), GroundLayer);
 
         switch (_movementState)
         {
